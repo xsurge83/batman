@@ -257,10 +257,14 @@ test "observe(key, callback) will attach event listeners, given a deep key, and 
   baz = Batman
     qux: "something else"
   baz.event('corge', ->)
-
+  
+  oldBaz = @obj.foo.bar.baz
   @obj.foo.bar.set('baz', baz)
-
+  
   ok !observer.called, "The observer shouldn't fire when the event instance changes, only when the event fires."
+  
+  oldBaz.corge('x', false)
+  ok !observer.called, "The observer shouldn't fire when the previous value of the keypath fires"
 
   @obj.foo.bar.baz.corge('x', false)
   deepEqual observer.lastCallArguments, ['x', false]
