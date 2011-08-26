@@ -1944,11 +1944,13 @@ class Batman.Renderer extends Batman.Object
 
   finish: ->
     @startTime = null
+    @fire 'parsed'
     @callback?()
     @fire 'rendered'
 
   forgetAll: ->
 
+  parsed: @eventOneShot ->
   rendered: @eventOneShot ->
 
   bindingRegexp = /data\-(.*)/
@@ -2261,7 +2263,6 @@ Batman.DOM = {
         Batman.DOM.attrReaders.bind(node, 'checked', key, context)
       else if node.nodeName.toLowerCase() == 'select'
         # wait for the select to render before binding to it
-        # FIXME expose the renderer's rendered event in the view?
         view = context.findKey('view')[0]
         view._renderer.rendered ->
           Batman.DOM.attrReaders.bind(node, 'value', key, context)
@@ -2387,8 +2388,8 @@ Batman.DOM = {
       sibling = node.nextSibling
       fragment = document.createDocumentFragment()
       numPendingChildren = 0
-      node.onParseExit = ->
-        setTimeout (-> parent.removeChild node), 0
+      parentRenderer.parsed ->
+        parent.removeChild node
 
       nodeMap = new Batman.Hash
       observers = {}
@@ -2431,7 +2432,6 @@ Batman.DOM = {
                   parent.insertBefore fragment, sibling
                   fragment = document.createDocumentFragment()
 
-                parentRenderer.allow 'ready'
                 parentRenderer.allow 'rendered'
                 parentRenderer.fire 'rendered'
             , localClone
