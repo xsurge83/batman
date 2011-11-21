@@ -14,14 +14,46 @@ class Batman.RailsStorage extends Batman.RestStorage
   _addJsonExtension: (options) ->
     options.url += '.json'
 
+  _prepareForAssociation: (modelClass, options, recordOptions) ->
+    association = id = null
+    if belongTos = modelClass._batman.associations?.getByType('belongsTo')
+      # Find a belongsTo with a localKey that is being requested
+      # TODO AssociationCollection should extend Set to allow indexing by localKey
+      belongTos.forEach (belongsTo) ->
+        if id = recordOptions[belongsTo.localKey]
+          association = belongsTo
+
+      if association and inverse = association.inverse()
+        if inverse.isSingular
+          @_prepareForSingularAssociation(association, id, options, recordOptions)
+        else if inverse.isPlural
+          @_prepareForPluralAssociation(association, id, options, recordOptions)
+
+        # Delete localKey to stop RestStorage from appending "?store_id=1"
+        delete options.data[association.localKey]
+        delete recordOptions[association.localKey]
+  
+  _prepareForSingularAssociation: (association, id, options, recordOptions) ->
+    root = Batman.helpers.pluralize(association.label)
+    ending = Batman.helpers.singularize(options.url.substr(1))
+    options.url = "/#{root}/#{id}/#{ending}"
+
+  _prepareForPluralAssociation: (association, id, options, recordOptions) ->
+    root = Batman.helpers.pluralize(association.label)
+    ending = Batman.helpers.pluralize(options.url.substr(1))
+    options.url = "/#{root}/#{id}/#{ending}"
+
   optionsForRecord: (args..., callback) ->
     super args..., (err, options) ->
-      @_addJsonExtension(options) unless err
+      unless err
+        @_addJsonExtension(options)
       callback.call @, err, options
 
-  optionsForCollection: (args..., callback) ->
-    super args..., (err, options) ->
-      @_addJsonExtension(options) unless err
+  optionsForCollection: (modelClass, recordOptions, callback) ->
+    super modelClass, recordOptions, (err, options) ->
+      unless err
+        @_prepareForAssociation(modelClass, options, recordOptions)
+        @_addJsonExtension(options)
       callback.call @, err, options
 
   @::after 'update', 'create', ([err, record, response, recordOptions]) ->
