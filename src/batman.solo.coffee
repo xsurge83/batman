@@ -308,7 +308,7 @@ buildParams = (prefix, obj, add) ->
       if rbracket.test(prefix)
         add prefix, v
       else
-        buildParams prefix + "[" + (if typeof v == "object" or Batman.typeOf(v) is 'Array' then i else "") + "]", v, add
+        buildParams prefix + "[]", v, add
   else if obj? and typeof obj == "object"
     for name of obj
       buildParams prefix + "[" + name + "]", obj[name], add
