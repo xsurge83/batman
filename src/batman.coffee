@@ -3808,6 +3808,8 @@ class Batman.View extends Batman.Object
           @forget('html', updateHTML)
       @observeAndFire 'html', updateHTML
 
+  @accessor 'yieldContents', -> Batman()
+
   render: (node) ->
     @event('ready').resetOneShot()
     @_renderer?.forgetAll()
@@ -3832,7 +3834,7 @@ class Batman.View extends Batman.Object
 class Batman.Renderer extends Batman.Object
   deferEvery: 50
 
-  constructor: (@node, callback, @context, view) ->
+  constructor: (@node, callback, @context, @view) ->
     super()
     @on('parsed', callback) if callback?
     developer.error "Must pass a RenderContext to a renderer for rendering" unless @context instanceof Batman.RenderContext
@@ -4718,7 +4720,7 @@ class Batman.DOM.DeferredRenderingBinding extends Batman.DOM.AbstractBinding
       @render()
 
   render: ->
-    new Batman.Renderer(@node, null, @renderContext)
+    new Batman.Renderer(@node, null, @renderContext, @renderer.view)
     @rendered = true
 
 class Batman.DOM.AddClassBinding extends Batman.DOM.AbstractAttributeBinding
@@ -5121,7 +5123,7 @@ class Batman.DOM.IteratorBinding extends Batman.DOM.AbstractCollectionBinding
     childRenderer = new Batman.Renderer @_nodeForItem(item), (->
       self.rendererMap.unset(item)
       self.insertItem(item, @node, options)
-    ), @renderContext.descend(item, @iteratorName)
+    ), @renderContext.descend(item, @iteratorName), @parentRenderer.view
 
     @rendererMap.set(item, childRenderer)
 
